@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具详情 - 网页工具箱</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .tool-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .tool-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tool-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tool-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .tool-nav a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .tool-nav a:hover {
+            opacity: 1;
+        }
+
+        .iframe-wrapper {
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            margin: 2rem auto;
+            max-width: 1000px;
+        }
+
+        .iframe-header {
+            background: var(--gray-800);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .window-dot.red { background: #ff5f57; }
+        .window-dot.yellow { background: #febc2e; }
+        .window-dot.green { background: #28c840; }
+
+        .iframe-content {
+            width: 100%;
+            height: 600px;
+            border: none;
+            background: white;
+        }
+
+        .iframe-url-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .iframe-url-warning svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .tool-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: white;
+        }
+
+        .tool-loading .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .not-found {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .not-found h1 {
+            font-size: 6rem;
+            margin-bottom: 1rem;
+        }
+
+        .not-found p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .error-state {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid rgba(239, 68, 68, 0.4);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            margin: 2rem auto;
+            max-width: 500px;
+        }
+
+        .error-state h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .tool-notice {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .iframe-content {
+                height: 500px;
+            }
+
+            .tool-header .container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="tool-page">
+    <header class="tool-header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">🧰</span>
+                <span id="site-name">网页工具箱</span>
+            </a>
+            <nav class="tool-nav">
+                <a href="index.html">← 返回首页</a>
+                <button class="btn btn-outline btn-sm" onclick="shareTool()">🔗 分享</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="tool-loading" class="tool-loading">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+
+        <div id="not-found" class="not-found hidden">
+            <h1>🔍</h1>
+            <h2>工具不存在</h2>
+            <p>找不到您要访问的工具</p>
+            <a href="index.html" class="btn btn-primary">返回首页</a>
+        </div>
+
+        <div id="error-state" class="error-state hidden">
+            <h3>⚠️ 无法加载工具</h3>
+            <p id="error-message">该工具没有有效的HTML文件</p>
+        </div>
+
+        <div id="tool-content" class="hidden">
+            <div class="tool-notice">
+                <strong>💡 提示：</strong>这是一个独立的网页工具，可以直接在浏览器中运行。部分工具可能需要交互操作。
+            </div>
+
+            <div id="url-warning" class="iframe-url-warning hidden">
+                ⚠️
+                <span>此工具链接到外部网站，请注意保护您的隐私和安全。</span>
+            </div>
+
+            <div class="iframe-wrapper">
+                <div class="iframe-header">
+                    <span class="window-dot red"></span>
+                    <span class="window-dot yellow"></span>
+                    <span class="window-dot green"></span>
+                    <span style="color: var(--gray-400); margin-left: 0.75rem; font-size: 0.875rem;" id="tool-title-header"></span>
+                </div>
+                <iframe id="tool-iframe" class="iframe-content"></iframe>
+            </div>
+
+            <div style="text-align: center; color: white; margin-top: 2rem;">
+                <p style="opacity: 0.8; margin-bottom: 1rem;" id="tool-description"></p>
+                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;" id="tool-tags"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        let toolId = null;
+
+        async function loadSettings() {
+            const settings = await StorageManager.getSettings();
+            document.getElementById('site-name').textContent = settings.siteName || '网页工具箱';
+        }
+
+        function showNotFound() {
+            document.getElementById('tool-loading').classList.add('hidden');
+            document.getElementById('not-found').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('tool-loading').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        async function loadTool() {
+            const urlParams = new URLSearchParams(window.location.search);
+            toolId = urlParams.get('id');
+
+            if (!toolId) {
+                showNotFound();
+                return;
+            }
+
+            const tool = await StorageManager.getToolById(toolId);
+
+            if (!tool) {
+                showNotFound();
+                return;
+            }
+
+            await ToolManager.incrementVisits(toolId);
+
+            document.getElementById('tool-loading').classList.add('hidden');
+            document.getElementById('tool-content').classList.remove('hidden');
+
+            document.title = `${tool.name} - ${document.getElementById('site-name').textContent}`;
+            document.getElementById('tool-title-header').textContent = tool.name;
+            document.getElementById('tool-description').textContent = tool.description || '';
+
+            const tagsContainer = document.getElementById('tool-tags');
+            if (tool.tags && tool.tags.length > 0) {
+                tagsContainer.innerHTML = tool.tags.map(tag => `<span class="tag tag-primary">${tag}</span>`).join('');
+            } else {
+                tagsContainer.classList.add('hidden');
+            }
+
+            const iframe = document.getElementById('tool-iframe');
+
+            if (tool.url) {
+                document.getElementById('url-warning').classList.remove('hidden');
+                iframe.src = tool.url;
+            } else {
+                const htmlFile = (tool.files || []).find(f =>
+                    f.ext === 'html' || f.ext === 'htm'
+                );
+
+                if (htmlFile && htmlFile.content) {
+                    const fullContent = buildFullHTML(htmlFile.content, tool.files);
+                    const blob = new Blob([fullContent], { type: 'text/html' });
+                    iframe.src = URL.createObjectURL(blob);
+                } else {
+                    showError('该工具没有包含有效的HTML文件');
+                }
+            }
+        }
+
+        function buildFullHTML(htmlContent, files) {
+            let content = htmlContent;
+
+            const cssFiles = (files || []).filter(f => f.ext === 'css' && f.isText);
+            for (const css of cssFiles) {
+                content = content.replace('</head>', `<style>${css.content}</style></head>`);
+            }
+
+            const jsFiles = (files || []).filter(f => f.ext === 'js' && f.isText);
+            for (const js of jsFiles) {
+                content = content.replace('</body>', `<script>${js.content}</script></body>`);
+            }
+
+            const imageFiles = (files || []).filter(f => f.isImage);
+            for (const img of imageFiles) {
+                const imgName = img.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                content = content.replace(new RegExp(imgName, 'g'), img.content);
+                content = content.replace(new RegExp(`"${img.name}"`, 'g'), `"${img.content}"`);
+                content = content.replace(new RegExp(`'${img.name}'`, 'g'), `'${img.content}'`);
+            }
+
+            return content;
+        }
+
+        function shareTool() {
+            const url = ToolManager.getShareUrl(toolId);
+            ToolManager.copyToClipboard(url);
+        }
+
+        async function init() {
+            await loadSettings();
+            await loadTool();
+        }
+
+        init();
+    </script>
+</body>
+</html>

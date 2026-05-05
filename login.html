@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 网页工具箱</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-page">
+        <div class="card login-card">
+            <div class="login-header">
+                <a href="index.html" class="logo">
+                    <span class="logo-icon">🧰</span>
+                    <span id="site-name">网页工具箱</span>
+                </a>
+                <h1 id="login-title">所有者登录</h1>
+                <p id="login-subtitle">输入密码以访问管理功能</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group" id="owner-name-group" style="display: none;">
+                    <label class="form-label" for="owner-name">所有者名称</label>
+                    <input type="text" id="owner-name" class="form-input" placeholder="请输入您的名字">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <input type="password" id="password" class="form-input" placeholder="请输入所有者密码" required>
+                    <p class="form-error hidden" id="error-message"></p>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" id="submit-btn">
+                    登录
+                </button>
+            </form>
+
+            <div class="form-footer mt-3">
+                <a href="index.html" class="btn btn-outline" style="width: 100%;">
+                    返回首页
+                </a>
+            </div>
+
+            <div class="mt-4 text-center" style="font-size: 0.875rem; color: var(--gray-500);">
+                <p>这是纯静态网站，数据存储在本地浏览器中。</p>
+                <p>忘记密码？清除浏览器数据后重新设置。</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        async function loadSettings() {
+            const settings = await StorageManager.getSettings();
+            document.getElementById('site-name').textContent = settings.siteName || '网页工具箱';
+        }
+
+        async function checkIsNewOwner() {
+            const data = await StorageManager.getData();
+            if (!data.isOwnerSetUp) {
+                document.getElementById('login-title').textContent = '设置所有者账户';
+                document.getElementById('login-subtitle').textContent = '首次设置，请创建您的管理账户';
+                document.getElementById('password').placeholder = '创建管理密码（至少6位）';
+                document.getElementById('owner-name-group').style.display = 'block';
+                document.getElementById('owner-name').required = true;
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const password = document.getElementById('password').value;
+            const ownerName = document.getElementById('owner-name').value;
+            const errorMessage = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (password.length < 6) {
+                errorMessage.textContent = '密码长度至少为6位';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            const data = await StorageManager.getData();
+            if (!data.isOwnerSetUp && !ownerName.trim()) {
+                errorMessage.textContent = '请输入所有者名称';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            errorMessage.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '登录中...';
+
+            setTimeout(async () => {
+                const result = await AuthManager.login(password);
+
+                if (result.success) {
+                    if (result.isNewOwner && ownerName.trim()) {
+                        await AuthManager.setOwnerName(ownerName.trim());
+                    }
+
+                    if (result.isNewOwner) {
+                        Toast.show('账户设置成功！现在可以开始管理工具了', 'success');
+                    } else {
+                        Toast.show('登录成功', 'success');
+                    }
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 500);
+                } else {
+                    errorMessage.textContent = result.error;
+                    errorMessage.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '登录';
+                }
+            }, 300);
+        }
+
+        async function init() {
+            await loadSettings();
+            await checkIsNewOwner();
+
+            if (AuthManager.isLoggedIn()) {
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

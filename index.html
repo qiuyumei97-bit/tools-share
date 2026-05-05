@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="个人网页工具管理系统 - 上传、分享、管理你的网页工具">
+    <title>网页工具箱 - 个人工具管理平台</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">🧰</span>
+                <span id="site-name">网页工具箱</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">首页</a>
+                <div class="auth-nav" id="auth-nav">
+                    <a href="login.html" class="btn btn-outline">登录</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 id="hero-title">欢迎使用网页工具箱</h1>
+            <p id="hero-description">上传、存储、组织和分享你的个人网页工具。简单、快速、安全。</p>
+            <div class="hero-buttons" id="hero-buttons">
+                <button class="btn btn-primary btn-lg" onclick="window.location.href='login.html'">开始管理</button>
+                <button class="btn btn-secondary btn-lg" onclick="scrollToTools()">浏览工具</button>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="search-input" placeholder="搜索工具..." oninput="filterTools()">
+            <select class="filter-select" id="category-filter" onchange="filterTools()">
+                <option value="">全部分类</option>
+                <option value="tool">实用工具</option>
+                <option value="game">小游戏</option>
+                <option value="converter">转换器</option>
+                <option value="generator">生成器</option>
+                <option value="other">其他</option>
+            </select>
+        </div>
+
+        <div id="tools-container" class="card-grid">
+        </div>
+
+        <div id="empty-state" class="empty-state hidden">
+            <div class="empty-icon">🔍</div>
+            <h2 class="empty-title">暂无工具</h2>
+            <p class="empty-description">还没有添加任何网页工具</p>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>关于</h4>
+                    <p>网页工具箱是一个用于管理和分享个人网页工具的平台。</p>
+                </div>
+                <div class="footer-section">
+                    <h4>快速链接</h4>
+                    <a href="index.html">首页</a>
+                    <a href="login.html">管理登录</a>
+                </div>
+                <div class="footer-section">
+                    <h4>帮助</h4>
+                    <a href="#" onclick="showHelp()">使用指南</a>
+                    <a href="#" onclick="showFAQ()">常见问题</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 网页工具箱. 使用纯前端技术构建，可部署于 GitHub Pages。</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">使用指南</h3>
+                <button class="modal-close" onclick="closeModal('help-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>访客使用</h4>
+                <p>您可以直接浏览和使用所有已发布的网页工具。点击工具卡片上的"使用"按钮即可打开工具。</p>
+
+                <h4 class="mt-3">所有者功能</h4>
+                <p>登录后，您可以：</p>
+                <ul>
+                    <li>上传新的网页工具（HTML、CSS、JavaScript文件）</li>
+                    <li>导入外部网页链接作为工具</li>
+                    <li>编辑和更新现有工具</li>
+                    <li>删除不需要的工具</li>
+                    <li>为每个工具生成分享链接</li>
+                    <li>备份和恢复数据</li>
+                </ul>
+
+                <h4 class="mt-3">首次设置</h4>
+                <p>首次登录时，系统会提示您设置所有者密码。请妥善保管此密码。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="faq-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">常见问题</h3>
+                <button class="modal-close" onclick="closeModal('faq-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Q: 数据存储在哪里？</h4>
+                <p>A: 所有数据存储在浏览器的IndexedDB中。您可以在设置中导出备份文件，以便在其他设备上恢复数据。</p>
+
+                <h4 class="mt-3">Q: 如何上传工具？</h4>
+                <p>A: 登录后，点击"上传工具"按钮，可以选择上传文件或导入网页链接。</p>
+
+                <h4 class="mt-3">Q: 可以部署到GitHub Pages吗？</h4>
+                <p>A: 可以！这个网站设计为纯静态网站，可以直接部署到GitHub Pages。具体步骤请参考项目文档。</p>
+
+                <h4 class="mt-3">Q: 分享链接如何使用？</h4>
+                <p>A: 每个工具都有唯一的分享链接。访客打开链接后可以直接使用该工具，无需登录。</p>
+
+                <h4 class="mt-3">Q: 更换设备后数据会丢失吗？</h4>
+                <p>A: 默认情况下数据存储在浏览器中。您可以在设置中导出备份文件，然后在新设备上导入恢复数据。</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allTools = [];
+
+        async function loadPage() {
+            const settings = await StorageManager.getSettings();
+            document.getElementById('site-name').textContent = settings.siteName || '网页工具箱';
+            document.getElementById('hero-title').textContent = settings.siteName ? `欢迎使用${settings.siteName}` : '欢迎使用网页工具箱';
+            document.getElementById('hero-description').textContent = settings.siteDescription || '上传、存储、组织和分享你的个人网页工具。简单、快速、安全。';
+
+            if (AuthManager.isLoggedIn()) {
+                const ownerName = await AuthManager.getOwnerName();
+                document.getElementById('auth-nav').innerHTML = `
+                    <span class="user-info">
+                        <span class="user-avatar">👤</span>
+                        <span>${ownerName}</span>
+                    </span>
+                    <a href="dashboard.html" class="btn btn-primary">管理面板</a>
+                    <button class="btn btn-outline" onclick="AuthManager.logout()">退出</button>
+                `;
+                document.getElementById('hero-buttons').innerHTML = `
+                    <button class="btn btn-primary btn-lg" onclick="window.location.href='dashboard.html'">管理工具</button>
+                    <button class="btn btn-secondary btn-lg" onclick="scrollToTools()">浏览工具</button>
+                `;
+            }
+
+            await loadTools();
+        }
+
+        async function loadTools() {
+            allTools = await StorageManager.getTools();
+            renderTools(allTools);
+        }
+
+        function renderTools(tools) {
+            const container = document.getElementById('tools-container');
+            const emptyState = document.getElementById('empty-state');
+
+            if (tools.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = tools.map(tool => `
+                <div class="card" data-id="${tool.id}">
+                    <div class="card-image">${tool.icon || '🛠️'}</div>
+                    <div class="card-body">
+                        <div class="card-tags">
+                            <span class="tag tag-primary">${getCategoryName(tool.category)}</span>
+                            ${(tool.tags || []).slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <h3 class="card-title">${tool.name}</h3>
+                        <p class="card-description">${tool.description || '暂无描述'}</p>
+                        <div class="card-meta">
+                            <span>👁️ ${tool.visits || 0} 次使用</span>
+                            <span>📅 ${formatDate(tool.createdAt)}</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="openTool('${tool.id}')">使用</button>
+                            <button class="btn btn-outline" onclick="shareTool('${tool.id}')">分享</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                tool: '实用工具',
+                game: '小游戏',
+                converter: '转换器',
+                generator: '生成器',
+                other: '其他'
+            };
+            return names[category] || '其他';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function filterTools() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('category-filter').value;
+
+            const filtered = allTools.filter(tool => {
+                const matchesSearch = tool.name.toLowerCase().includes(searchTerm) ||
+                    (tool.description || '').toLowerCase().includes(searchTerm) ||
+                    (tool.tags || []).some(tag => tag.toLowerCase().includes(searchTerm));
+                const matchesCategory = !category || tool.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderTools(filtered);
+        }
+
+        function scrollToTools() {
+            document.getElementById('tools-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openTool(toolId) {
+            window.location.href = `tool.html?id=${toolId}`;
+        }
+
+        function shareTool(toolId) {
+            const url = ToolManager.getShareUrl(toolId);
+            ToolManager.copyToClipboard(url);
+        }
+
+        function showHelp() {
+            document.getElementById('help-modal').classList.add('active');
+            event.preventDefault();
+        }
+
+        function showFAQ() {
+            document.getElementById('faq-modal').classList.add('active');
+            event.preventDefault();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        loadPage();
+    </script>
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理面板 - 网页工具箱</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .upload-tabs {
+            display: flex;
+            background: var(--gray-100);
+            border-radius: var(--radius-lg);
+            padding: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: var(--radius);
+            background: transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: var(--transition);
+        }
+
+        .upload-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .upload-tab:hover:not(.active) {
+            color: var(--gray-800);
+        }
+
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section-title {
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .icon-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .icon-option {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .icon-option:hover {
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .icon-option.selected {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .empty-files-hint {
+            background: rgba(79, 70, 229, 0.05);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: var(--radius);
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--gray-600);
+        }
+
+        .backup-section {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .backup-section h4 {
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .custom-file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .custom-file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            right: 0;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">🧰</span>
+                <span id="site-name">网页工具箱</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">首页</a>
+                <div class="auth-nav">
+                    <span class="user-info">
+                        <span class="user-avatar">👤</span>
+                        <span id="owner-name">管理员</span>
+                    </span>
+                    <button class="btn btn-outline" onclick="AuthManager.logout()">退出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard-page">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">首页</a>
+                <span>/</span>
+                <span>管理面板</span>
+            </div>
+
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">工具管理</h1>
+                <div class="dashboard-actions">
+                    <button class="btn btn-outline" onclick="openSettings()">⚙️ 设置</button>
+                    <button class="btn btn-primary" onclick="openUploadModal()">➕ 上传工具</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary">📦</div>
+                    <div class="stat-content">
+                        <h3 id="total-tools">0</h3>
+                        <p>工具总数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success">👁️</div>
+                    <div class="stat-content">
+                        <h3 id="total-visits">0</h3>
+                        <p>总访问次数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning">📁</div>
+                    <div class="stat-content">
+                        <h3 id="total-files">0</h3>
+                        <p>文件数量</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon danger">💾</div>
+                    <div class="stat-content">
+                        <h3 id="storage-used">0 KB</h3>
+                        <p>存储使用</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" class="search-input" id="search-input" placeholder="搜索工具..." oninput="filterTools()">
+                <select class="filter-select" id="category-filter" onchange="filterTools()">
+                    <option value="">全部分类</option>
+                    <option value="tool">实用工具</option>
+                    <option value="game">小游戏</option>
+                    <option value="converter">转换器</option>
+                    <option value="generator">生成器</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+
+            <div id="tools-list" class="card-grid">
+            </div>
+
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon">📦</div>
+                <h2 class="empty-title">暂无工具</h2>
+                <p class="empty-description">点击"上传工具"按钮添加你的第一个网页工具</p>
+                <button class="btn btn-primary btn-lg" onclick="openUploadModal()">上传工具</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="upload-modal-title">上传工具</h3>
+                <button class="modal-close" onclick="closeModal('upload-modal')">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <form id="tool-form" onsubmit="handleSubmitTool(event)">
+                    <input type="hidden" id="tool-id">
+
+                    <div class="upload-tabs">
+                        <button type="button" class="upload-tab active" id="tab-files" onclick="switchUploadTab('files')">📁 上传文件</button>
+                        <button type="button" class="upload-tab" id="tab-url" onclick="switchUploadTab('url')">🔗 导入链接</button>
+                    </div>
+
+                    <div id="tab-content-files">
+                        <div class="form-section">
+                            <div class="form-section-title">📝 基本信息</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">工具名称 *</label>
+                                    <input type="text" id="tool-name" class="form-input" placeholder="例如：图片压缩工具" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">分类</label>
+                                    <select id="tool-category" class="form-input">
+                                        <option value="tool">实用工具</option>
+                                        <option value="game">小游戏</option>
+                                        <option value="converter">转换器</option>
+                                        <option value="generator">生成器</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">描述</label>
+                                <textarea id="tool-description" class="form-input" rows="2" placeholder="简要描述这个工具的功能..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">标签（用逗号分隔）</label>
+                                <input type="text" id="tool-tags" class="form-input" placeholder="例如：图片,压缩,优化">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">🎨 图标选择</div>
+                            <input type="hidden" id="tool-icon" value="🛠️">
+                            <div class="icon-picker" id="icon-picker">
+                                <span class="icon-option selected" data-icon="🛠️">🛠️</span>
+                                <span class="icon-option" data-icon="🔧">🔧</span>
+                                <span class="icon-option" data-icon="⚙️">⚙️</span>
+                                <span class="icon-option" data-icon="🚀">🚀</span>
+                                <span class="icon-option" data-icon="🎯">🎯</span>
+                                <span class="icon-option" data-icon="✨">✨</span>
+                                <span class="icon-option" data-icon="🌟">🌟</span>
+                                <span class="icon-option" data-icon="💡">💡</span>
+                                <span class="icon-option" data-icon="🎨">🎨</span>
+                                <span class="icon-option" data-icon="📊">📊</span>
+                                <span class="icon-option" data-icon="🎲">🎲</span>
+                                <span class="icon-option" data-icon="🧮">🧮</span>
+                                <span class="icon-option" data-icon="📱">📱</span>
+                                <span class="icon-option" data-icon="🖼️">🖼️</span>
+                                <span class="icon-option" data-icon="🎵">🎵</span>
+                                <span class="icon-option" data-icon="📝">📝</span>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">📁 工具文件</div>
+                            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                                <div class="upload-icon">📁</div>
+                                <p class="upload-text">点击或拖拽文件到此处</p>
+                                <p class="upload-hint">支持 HTML, CSS, JS, JSON, 图片等文件</p>
+                            </div>
+                            <input type="file" id="file-input" multiple accept=".html,.htm,.css,.js,.json,.txt,.png,.jpg,.jpeg,.gif,.svg,.ico" style="display: none;" onchange="handleFileSelect(event)">
+                            <div id="file-list"></div>
+                            <div id="empty-files-hint" class="empty-files-hint hidden">
+                                <strong>提示：</strong>请至少上传一个HTML文件作为工具入口
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-content-url" class="hidden">
+                        <div class="form-section">
+                            <div class="form-section-title">🔗 网页链接</div>
+                            <div class="form-group">
+                                <label class="form-label">网页URL *</label>
+                                <input type="url" id="tool-url" class="form-input" placeholder="https://example.com/tool.html" required>
+                                <p class="form-error hidden" id="url-error"></p>
+                            </div>
+                            <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.5rem;">
+                                ⚠️ 注意：URL方式会直接嵌入外部网页，请确保链接安全可靠。由于CORS限制，部分网站可能无法正常加载。
+                            </p>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">📝 工具信息</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">工具名称 *</label>
+                                    <input type="text" id="url-tool-name" class="form-input" placeholder="例如：在线计算器" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">分类</label>
+                                    <select id="url-tool-category" class="form-input">
+                                        <option value="tool">实用工具</option>
+                                        <option value="game">小游戏</option>
+                                        <option value="converter">转换器</option>
+                                        <option value="generator">生成器</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">描述</label>
+                                <textarea id="url-tool-description" class="form-input" rows="2" placeholder="简要描述这个工具的功能..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">标签（用逗号分隔）</label>
+                                <input type="text" id="url-tool-tags" class="form-input" placeholder="例如：在线,工具">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">🎨 图标选择</div>
+                            <input type="hidden" id="url-tool-icon" value="🔗">
+                            <div class="icon-picker" id="url-icon-picker">
+                                <span class="icon-option" data-icon="🛠️">🛠️</span>
+                                <span class="icon-option" data-icon="🔗">🔗</span>
+                                <span class="icon-option" data-icon="🌐">🌐</span>
+                                <span class="icon-option" data-icon="📲">📲</span>
+                                <span class="icon-option" data-icon="💻">💻</span>
+                                <span class="icon-option" data-icon="🔧">🔧</span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('upload-modal')">取消</button>
+                <button type="submit" form="tool-form" class="btn btn-primary" id="submit-tool-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">网站设置</h3>
+                <button class="modal-close" onclick="closeModal('settings-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="settings-form" onsubmit="handleSaveSettings(event)">
+                    <div class="form-section">
+                        <div class="form-section-title">👤 所有者信息</div>
+                        <div class="form-group">
+                            <label class="form-label">所有者名称</label>
+                            <input type="text" id="settings-owner-name" class="form-input" placeholder="你的名字">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">🏠 网站信息</div>
+                        <div class="form-group">
+                            <label class="form-label">网站名称</label>
+                            <input type="text" id="settings-site-name" class="form-input" placeholder="我的工具箱">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">网站描述</label>
+                            <textarea id="settings-site-description" class="form-input" rows="2" placeholder="个人网页工具集合..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="backup-section">
+                        <h4>💾 数据备份与恢复</h4>
+                        <p style="color: var(--gray-600); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                            数据存储在浏览器中，更换设备时可以先导出备份文件，然后在新设备上导入。
+                        </p>
+                        <div class="backup-actions">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="handleBackup()">📥 导出备份</button>
+                            <label class="btn btn-outline btn-sm custom-file-upload">
+                                📤 导入备份
+                                <input type="file" accept=".json" onchange="handleRestore(event)">
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('settings-modal')">取消</button>
+                <button type="submit" form="settings-form" class="btn btn-primary">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">确认删除</h3>
+                <button class="modal-close" onclick="closeModal('delete-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除工具 "<span id="delete-tool-name"></span>" 吗？</p>
+                <p class="mt-2" style="color: var(--danger);">此操作不可恢复！</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('delete-modal')">取消</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        if (!AuthManager.requireAuth()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadPage() {
+            const settings = await StorageManager.getSettings();
+            document.getElementById('site-name').textContent = settings.siteName || '网页工具箱';
+            document.getElementById('owner-name').textContent = settings.ownerName || '管理员';
+            await loadDashboard();
+        }
+
+        let allTools = [];
+        let selectedFiles = [];
+        let deleteTargetId = null;
+        let currentUploadTab = 'files';
+
+        async function loadDashboard() {
+            allTools = await StorageManager.getTools();
+            updateStats();
+            renderTools(allTools);
+        }
+
+        function updateStats() {
+            document.getElementById('total-tools').textContent = allTools.length;
+
+            const totalVisits = allTools.reduce((sum, tool) => sum + (tool.visits || 0), 0);
+            document.getElementById('total-visits').textContent = totalVisits;
+
+            const totalFiles = allTools.reduce((sum, tool) => sum + (tool.files || []).length, 0);
+            document.getElementById('total-files').textContent = totalFiles;
+
+            const totalSize = allTools.reduce((sum, tool) => {
+                return sum + (tool.files || []).reduce((fileSum, file) => fileSum + (file.size || 0), 0);
+            }, 0);
+            document.getElementById('storage-used').textContent = formatBytes(totalSize);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function renderTools(tools) {
+            const container = document.getElementById('tools-list');
+            const emptyState = document.getElementById('empty-state');
+
+            if (tools.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = tools.map(tool => `
+                <div class="card" data-id="${tool.id}">
+                    <div class="card-image">${tool.icon || '🛠️'}</div>
+                    <div class="card-body">
+                        <div class="card-tags">
+                            <span class="tag tag-primary">${getCategoryName(tool.category)}</span>
+                            ${(tool.tags || []).slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <h3 class="card-title">${tool.name}</h3>
+                        <p class="card-description">${tool.description || '暂无描述'}</p>
+                        <div class="card-meta">
+                            <span>👁️ ${tool.visits || 0} 次</span>
+                            <span>📁 ${(tool.files || []).length} 文件</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="openTool('${tool.id}')">使用</button>
+                            <button class="btn btn-outline btn-sm" onclick="editTool('${tool.id}')">编辑</button>
+                            <button class="btn btn-outline btn-sm" onclick="shareTool('${tool.id}')">分享</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTool('${tool.id}')">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                tool: '实用工具',
+                game: '小游戏',
+                converter: '转换器',
+                generator: '生成器',
+                other: '其他'
+            };
+            return names[category] || '其他';
+        }
+
+        function filterTools() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('category-filter').value;
+
+            const filtered = allTools.filter(tool => {
+                const matchesSearch = tool.name.toLowerCase().includes(searchTerm) ||
+                    (tool.description || '').toLowerCase().includes(searchTerm) ||
+                    (tool.tags || []).some(tag => tag.toLowerCase().includes(searchTerm));
+                const matchesCategory = !category || tool.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderTools(filtered);
+        }
+
+        function switchUploadTab(tab) {
+            currentUploadTab = tab;
+            document.getElementById('tab-files').classList.toggle('active', tab === 'files');
+            document.getElementById('tab-url').classList.toggle('active', tab === 'url');
+            document.getElementById('tab-content-files').classList.toggle('hidden', tab !== 'files');
+            document.getElementById('tab-content-url').classList.toggle('hidden', tab !== 'url');
+        }
+
+        async function openUploadModal(toolId = null) {
+            const modal = document.getElementById('upload-modal');
+            const form = document.getElementById('tool-form');
+            const title = document.getElementById('upload-modal-title');
+
+            form.reset();
+            selectedFiles = [];
+            document.getElementById('file-list').innerHTML = '';
+            document.getElementById('empty-files-hint').classList.add('hidden');
+            switchUploadTab('files');
+
+            if (toolId) {
+                const tool = await StorageManager.getToolById(toolId);
+                if (tool) {
+                    title.textContent = '编辑工具';
+                    document.getElementById('tool-id').value = tool.id;
+                    document.getElementById('tool-name').value = tool.name;
+                    document.getElementById('tool-description').value = tool.description || '';
+                    document.getElementById('tool-category').value = tool.category || 'tool';
+                    document.getElementById('tool-tags').value = (tool.tags || []).join(', ');
+                    document.getElementById('tool-icon').value = tool.icon || '🛠️';
+                    selectedFiles = tool.files || [];
+                    renderSelectedFiles();
+
+                    document.querySelectorAll('#icon-picker .icon-option').forEach(opt => {
+                        opt.classList.toggle('selected', opt.dataset.icon === tool.icon);
+                    });
+                }
+            } else {
+                title.textContent = '上传工具';
+                document.getElementById('tool-id').value = '';
+                document.getElementById('tool-icon').value = '🛠️';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function editTool(toolId) {
+            openUploadModal(toolId);
+        }
+
+        async function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            const processed = await FileHandler.handleFiles(files);
+            selectedFiles = [...selectedFiles, ...processed];
+            renderSelectedFiles();
+            event.target.value = '';
+        }
+
+        function renderSelectedFiles() {
+            const container = document.getElementById('file-list');
+            const hint = document.getElementById('empty-files-hint');
+
+            if (selectedFiles.length === 0) {
+                container.innerHTML = '';
+                hint.classList.remove('hidden');
+                return;
+            }
+
+            hint.classList.add('hidden');
+            container.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-preview">
+                    <div class="file-icon">${getFileIcon(file.ext)}</div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${FileHandler.formatFileSize(file.size)}</div>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeFile(${index})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(ext) {
+            const icons = {
+                html: '🌐', htm: '🌐',
+                css: '🎨',
+                js: '📜',
+                json: '📋',
+                png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️', ico: '🖼️',
+                default: '📄'
+            };
+            return icons[ext] || icons.default;
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderSelectedFiles();
+        }
+
+        async function handleSubmitTool(event) {
+            event.preventDefault();
+
+            if (currentUploadTab === 'files') {
+                await handleFileToolSubmit();
+            } else {
+                await handleUrlToolSubmit();
+            }
+        }
+
+        async function handleFileToolSubmit() {
+            const toolId = document.getElementById('tool-id').value;
+            const name = document.getElementById('tool-name').value.trim();
+            const description = document.getElementById('tool-description').value.trim();
+            const category = document.getElementById('tool-category').value;
+            const tags = document.getElementById('tool-tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const icon = document.getElementById('tool-icon').value.trim() || '🛠️';
+
+            if (!name) {
+                Toast.show('请输入工具名称', 'error');
+                return;
+            }
+
+            if (!toolId && selectedFiles.length === 0) {
+                Toast.show('请至少上传一个文件', 'error');
+                return;
+            }
+
+            const toolData = {
+                name,
+                description,
+                category,
+                tags,
+                icon,
+                files: selectedFiles,
+                url: null
+            };
+
+            if (toolId) {
+                await ToolManager.updateTool(toolId, toolData);
+                Toast.show('工具更新成功', 'success');
+            } else {
+                await ToolManager.createTool(toolData);
+                Toast.show('工具创建成功', 'success');
+            }
+
+            closeModal('upload-modal');
+            await loadDashboard();
+        }
+
+        async function handleUrlToolSubmit() {
+            const url = document.getElementById('tool-url').value.trim();
+            const name = document.getElementById('url-tool-name').value.trim();
+            const description = document.getElementById('url-tool-description').value.trim();
+            const category = document.getElementById('url-tool-category').value;
+            const tags = document.getElementById('url-tool-tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const icon = document.getElementById('url-tool-icon').value.trim() || '🔗';
+
+            if (!name) {
+                Toast.show('请输入工具名称', 'error');
+                return;
+            }
+
+            if (!url) {
+                Toast.show('请输入网页链接', 'error');
+                return;
+            }
+
+            const toolData = {
+                name,
+                description,
+                category,
+                tags,
+                icon,
+                files: [],
+                url: url
+            };
+
+            await ToolManager.createTool(toolData);
+            Toast.show('工具创建成功', 'success');
+
+            closeModal('upload-modal');
+            await loadDashboard();
+        }
+
+        function deleteTool(toolId) {
+            allTools.forEach(async (tool) => {
+                if (tool.id === toolId) {
+                    deleteTargetId = toolId;
+                    document.getElementById('delete-tool-name').textContent = tool.name;
+                    document.getElementById('delete-modal').classList.add('active');
+                }
+            });
+        }
+
+        async function confirmDelete() {
+            if (deleteTargetId) {
+                await ToolManager.deleteTool(deleteTargetId);
+                Toast.show('工具已删除', 'success');
+                deleteTargetId = null;
+                closeModal('delete-modal');
+                await loadDashboard();
+            }
+        }
+
+        function openTool(toolId) {
+            window.open(`tool.html?id=${toolId}`, '_blank');
+        }
+
+        function shareTool(toolId) {
+            const url = ToolManager.getShareUrl(toolId);
+            ToolManager.copyToClipboard(url);
+        }
+
+        async function openSettings() {
+            const settings = await StorageManager.getSettings();
+            document.getElementById('settings-owner-name').value = settings.ownerName || '';
+            document.getElementById('settings-site-name').value = settings.siteName || '';
+            document.getElementById('settings-site-description').value = settings.siteDescription || '';
+            document.getElementById('settings-modal').classList.add('active');
+        }
+
+        async function handleSaveSettings(event) {
+            event.preventDefault();
+
+            const ownerName = document.getElementById('settings-owner-name').value.trim();
+            const siteName = document.getElementById('settings-site-name').value.trim();
+            const siteDescription = document.getElementById('settings-site-description').value.trim();
+
+            await StorageManager.updateSettings({
+                siteName: siteName || '网页工具箱',
+                siteDescription: siteDescription,
+                ownerName: ownerName || '管理员'
+            });
+
+            Toast.show('设置已保存', 'success');
+            closeModal('settings-modal');
+
+            document.getElementById('site-name').textContent = siteName || '网页工具箱';
+            document.getElementById('owner-name').textContent = ownerName || '管理员';
+        }
+
+        async function handleBackup() {
+            await StorageManager.backupToFile();
+            Toast.show('备份已下载', 'success');
+        }
+
+        async function handleRestore(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const result = await StorageManager.restoreFromFile(file);
+                if (result.success) {
+                    Toast.show('数据导入成功', 'success');
+                    closeModal('settings-modal');
+                    await loadDashboard();
+                } else {
+                    Toast.show(result.error, 'error');
+                }
+            }
+            event.target.value = '';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        const uploadArea = document.getElementById('upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            const processed = await FileHandler.handleFiles(files);
+            selectedFiles = [...selectedFiles, ...processed];
+            renderSelectedFiles();
+        });
+
+        document.querySelectorAll('.icon-picker').forEach(picker => {
+            picker.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('icon-option')) {
+                    picker.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('selected'));
+                    target.classList.add('selected');
+
+                    if (picker.id === 'icon-picker') {
+                        document.getElementById('tool-icon').value = target.dataset.icon;
+                    } else {
+                        document.getElementById('url-tool-icon').value = target.dataset.icon;
+                    }
+                }
+            });
+        });
+
+        loadPage();
+    </script>
+</body>
+</html>
